@@ -1,5 +1,7 @@
+import dispatch._, Defaults._
 import java.security.MessageDigest
 import scala.io.Source._
+import scala.util.Success
 
 object EndlessMarvels {
 
@@ -18,6 +20,20 @@ object EndlessMarvels {
 
     val hash = calculateMD5(time, PRIVATE, PUBLIC)
     println(s"md5:$hash")
+
+    val request = url("http://gateway.marvel.com/v1/public/characters")
+      .addQueryParameter("ts", time)
+      .addQueryParameter("apikey", PUBLIC)
+      .addQueryParameter("hash", hash).GET
+
+    println(request.url)
+
+    val responseFuture = Http(request OK as.Response(identity))
+
+    responseFuture onComplete{
+      case Success(value) => println(value.getResponseBody)
+      case _ => println("KO")
+    }
 
   }
 
