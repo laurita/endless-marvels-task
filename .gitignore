@@ -1,0 +1,5 @@
+.idea/
+endless_marvels.iml
+pom.xml
+target/
+src/main/scala/Try.scala
