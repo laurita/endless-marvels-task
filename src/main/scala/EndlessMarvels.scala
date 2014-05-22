@@ -2,6 +2,7 @@ import dispatch._, Defaults._
 import java.security.MessageDigest
 import scala.io.Source._
 import scala.util.Success
+import scala.util.parsing.json._
 
 object EndlessMarvels {
 
@@ -26,12 +27,27 @@ object EndlessMarvels {
       .addQueryParameter("apikey", PUBLIC)
       .addQueryParameter("hash", hash).GET
 
-    println(request.url)
-
     val responseFuture = Http(request OK as.Response(identity))
 
     responseFuture onComplete{
-      case Success(value) => println(value.getResponseBody)
+      case Success(value) =>
+        val response = value.getResponseBody
+
+        val json = JSON.parseFull(response)
+        println(json)
+
+        val data = json match {
+          case Some(m: Map[String, Any]) => m("data") match {
+            case d: Map[String, Any] => d("results") match {
+              case r: List[Map[String, Any]] => r
+            }
+          }
+        }
+        println(data)
+
+        val characters = data.map(l => l("name"))
+        println(characters)
+
       case _ => println("KO")
     }
 
