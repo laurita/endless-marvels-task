@@ -7,29 +7,21 @@ import scala.util.parsing.json._
 object EndlessMarvels {
 
   def main(args: Array[String]) {
-    val source = fromFile("private.txt")
 
-    // public key used as apikey in HTTP requests
-    val PUBLIC = "ee45f5431cb5912ca20ee048eefa282d"
-    // private key used for MD5 hash computation
-    val PRIVATE = source.getLines mkString "\n"
+    // Marvels public key used as apikey in HTTP requests
+    //val MARVELS_PUBLIC = getStrFromFile("marvels_public.txt")
+    val MARVELS_PUBLIC = args(0)
+    // Marvels private key used for MD5 hash computation
+    //val MARVELS_PRIVATE = getStrFromFile("marvels_private.txt")
+    val MARVELS_PRIVATE = args(1)
+    // Datasift username
+    val DATASIFT_USERNAME = args(2)
+    // Datasift api key
+    val DATASIFT_API_KEY = args(3)
 
-    println("calculating MD5...")
+    val future = getMarvelsCharacters(MARVELS_PRIVATE, MARVELS_PUBLIC)
 
-    val time = System.currentTimeMillis().toString
-    println(s"time: $time")
-
-    val hash = calculateMD5(time, PRIVATE, PUBLIC)
-    println(s"md5:$hash")
-
-    val request = url("http://gateway.marvel.com/v1/public/characters")
-      .addQueryParameter("ts", time)
-      .addQueryParameter("apikey", PUBLIC)
-      .addQueryParameter("hash", hash).GET
-
-    val responseFuture = Http(request OK as.Response(identity))
-
-    responseFuture onComplete{
+    future onComplete {
       case Success(value) =>
         val response = value.getResponseBody
 
@@ -43,14 +35,34 @@ object EndlessMarvels {
             }
           }
         }
-        println(data)
 
-        val characters = data.map(l => l("name"))
-        println(characters)
+        val chars: List[String] = data.map(l => l("name").asInstanceOf[String].toLowerCase)
 
-      case _ => println("KO")
+        val datasiftStream = new DatasiftStream(DATASIFT_USERNAME, DATASIFT_API_KEY, chars)
+        datasiftStream.run()
+
+      //case _ => println("KO")
     }
+  }
 
+  def getStrFromFile(file: String): String = {
+    fromFile(file).getLines mkString "\n"
+  }
+
+  def getMarvelsCharacters(privateKey: String, publicKey: String) = {
+    println("in characterList")
+    val time = System.currentTimeMillis().toString
+    println(s"time: $time")
+
+    val hash = calculateMD5(time, privateKey, publicKey)
+    println(s"md5:$hash")
+
+    val request = url("http://gateway.marvel.com/v1/public/characters")
+      .addQueryParameter("ts", time)
+      .addQueryParameter("apikey", publicKey)
+      .addQueryParameter("hash", hash).GET
+
+    Http(request OK as.Response(identity))
   }
 
   def calculateMD5(ts: String, privateKey: String, publicKey: String): String = {
