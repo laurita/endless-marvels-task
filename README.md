@@ -30,6 +30,7 @@ There are two ways for running the program.
 5. run `java -cp endless_marvels-1.0-SNAPSHOT-jar-with-dependencies.jar EndlessMarvels <Marvel public key> <Marvel private key> <DataSift API username> <DataSift API key>`
 
 ### 2. Use a ready-to-use jar
+(This is not advisable. The jar is 36.4MB, since it contains a lot of dependencies.)
 
 1. Download the jar
 2. run `java -cp endless_marvels-1.0-SNAPSHOT-jar-with-dependencies.jar EndlessMarvels <Marvel public key> <Marvel private key> <DataSift API username> <DataSift API key>`
