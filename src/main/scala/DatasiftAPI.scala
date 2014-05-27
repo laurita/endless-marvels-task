@@ -5,12 +5,8 @@ import com.datasift.client._
 import java.util.concurrent.atomic.AtomicLong
 import scala.concurrent.duration._
 
-class DatasiftStream(datasiftUsername: String, datasiftApiKey: String, characters: List[String]) {
-
-  def getCharacters: List[String] = {
-    characters
-  }
-
+class DatasiftAPI(datasiftUsername: String, datasiftApiKey: String, characters: List[String]) {
+  //
   def run() {
     // create datasift client
     val datasiftClient = createDatasiftClient(datasiftUsername, datasiftApiKey)
@@ -26,7 +22,6 @@ class DatasiftStream(datasiftUsername: String, datasiftApiKey: String, character
     val system = ActorSystem("system")
     println("created Akka system")
     val streamActor = system.actorOf(Props(new DatasiftStreamActor(characters)), name="streamActor")
-
     // schedule dumping after 0ms repeating every 50ms
     import system.dispatcher
     val cancellable =
@@ -34,21 +29,22 @@ class DatasiftStream(datasiftUsername: String, datasiftApiKey: String, character
         60000 milliseconds,
         streamActor,
         Dump)
-
     // start live stream
     startLiveStream(datasiftClient, result, streamActor)
-
   }
 
+  // returns a DataSiftClient
   def createDatasiftClient(username: String, apiKey: String): DataSiftClient = {
     val config = new DataSiftConfig(username, apiKey)
     new DataSiftClient(config)
   }
 
+  // returns a Stream for compiled csdl query
   def compileCsdlQuery(datasift: DataSiftClient, csdl: String): Stream = {
     datasift.core().compile(csdl).sync()
   }
 
+  // check for failure other than exception
   def checkForFailure(result: Stream) {
     if (result.isSuccessful) {
       //if true an exception may have caused the request to fail, inspect the cause if available
@@ -58,6 +54,7 @@ class DatasiftStream(datasiftUsername: String, datasiftApiKey: String, character
     }
   }
 
+  // subscribe a DataSift stream
   def startLiveStream(datasift: DataSiftClient, result: Stream, actor: ActorRef) {
     //handle exceptions that can't necessarily be linked to a specific stream
     datasift.liveStream().onError(new ErrorHandler())
@@ -65,9 +62,10 @@ class DatasiftStream(datasiftUsername: String, datasiftApiKey: String, character
     datasift.liveStream().onStreamEvent(new DeleteHandler())
     //process interactions
     datasift.liveStream().subscribe(new Subscription(Stream.fromString(result.hash()), actor, characters))
-    println("stream subscribed")
+    println("DataSift stream subscribed")
   }
 
+  // returns a very custom csdl query
   def buildCsdlQuery(chars: List[String]): String = {
     // english tweets containing some of the characters
     "interaction.type == \"twitter\" AND language.tag == \"en\" AND twitter.text contains_any \""+ chars.mkString(",") +"\""
