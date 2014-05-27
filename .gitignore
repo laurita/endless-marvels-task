@@ -2,5 +2,5 @@
 endless_marvels.iml
 pom.xml
 target/
-src/main/scala/Try.scala
-private.txt
+*.txt
+var/
