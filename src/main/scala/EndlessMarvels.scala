@@ -26,7 +26,6 @@ object EndlessMarvels {
         val response = value.getResponseBody
 
         val json = JSON.parseFull(response)
-        println(json)
 
         val data = json match {
           case Some(m: Map[String, Any]) => m("data") match {
@@ -37,6 +36,7 @@ object EndlessMarvels {
         }
 
         val chars: List[String] = data.map(l => l("name").asInstanceOf[String].toLowerCase)
+
 
         val datasiftStream = new DatasiftStream(DATASIFT_USERNAME, DATASIFT_API_KEY, chars)
         datasiftStream.run()
@@ -52,15 +52,21 @@ object EndlessMarvels {
   def getMarvelsCharacters(privateKey: String, publicKey: String) = {
     val time = System.currentTimeMillis().toString
 
+    // create hash from time, private key and public key
     val hash = calculateMD5(time, privateKey, publicKey)
 
+    // TODO: create marvels actor to get a full list of characters and create DatasiftStream form there
+
+    // create a request to get characters
     val request = url("http://gateway.marvel.com/v1/public/characters")
       .addQueryParameter("ts", time)
       .addQueryParameter("limit", "100")
       .addQueryParameter("apikey", publicKey)
       .addQueryParameter("hash", hash).GET
 
-    Http(request OK as.Response(identity))
+    val response = request OK as.Response(identity)
+
+    Http(response)
   }
 
   def calculateMD5(ts: String, privateKey: String, publicKey: String): String = {

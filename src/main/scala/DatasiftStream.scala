@@ -14,22 +14,18 @@ class DatasiftStream(datasiftUsername: String, datasiftApiKey: String, character
   def run() {
     // create datasift client
     val datasiftClient = createDatasiftClient(datasiftUsername, datasiftApiKey)
-    println("datasift client: " + datasiftClient)
+    println("datasift client created")
     // build csdl query
     val csdl = buildCsdlQuery(characters)
-    println("csdl : "+ csdl)
+    println("csdl created: "+ csdl)
     // compile csdl query
     val result = compileCsdlQuery(datasiftClient, csdl)
-    println("result: "+ result)
     // check for failure
     checkForFailure(result)
-    println("checked for failure")
-
     // create akka actor system for interaction logging
     val system = ActorSystem("system")
     println("created Akka system")
     val streamActor = system.actorOf(Props(new DatasiftStreamActor(characters)), name="streamActor")
-    println("created streamActor")
 
     // schedule dumping after 0ms repeating every 50ms
     import system.dispatcher
@@ -55,7 +51,6 @@ class DatasiftStream(datasiftUsername: String, datasiftApiKey: String, character
 
   def checkForFailure(result: Stream) {
     if (result.isSuccessful) {
-      println("successful")
       //if true an exception may have caused the request to fail, inspect the cause if available
       if (result.failureCause() != null) { //may not be an exception
         result.failureCause().printStackTrace()
@@ -64,13 +59,10 @@ class DatasiftStream(datasiftUsername: String, datasiftApiKey: String, character
   }
 
   def startLiveStream(datasift: DataSiftClient, result: Stream, actor: ActorRef) {
-    println("in startLiveStream")
     //handle exceptions that can't necessarily be linked to a specific stream
     datasift.liveStream().onError(new ErrorHandler())
-
     //handle delete message
     datasift.liveStream().onStreamEvent(new DeleteHandler())
-
     //process interactions
     datasift.liveStream().subscribe(new Subscription(Stream.fromString(result.hash()), actor, characters))
     println("stream subscribed")
