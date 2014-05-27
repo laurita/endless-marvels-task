@@ -2,15 +2,18 @@ import akka.actor.{ActorLogging, Actor}
 import com.fasterxml.jackson.databind.JsonNode
 import java.io.{BufferedWriter, FileWriter, File}
 import scala.util.parsing.json.JSONObject
+import collection.immutable.ListMap
 
-class DatasiftStreamActor extends Actor with ActorLogging {
+class DatasiftStreamActor(characters: List[String]) extends Actor with ActorLogging {
   println("creating DatasiftStreamActor")
 
   // initially there are no interactions in state map
   def receive = initial(Map[String, List[JSONObject]]())
   
   def initial(interactions: Map[String, List[JSONObject]]): Receive = {
-    case AddInteraction(character: String, inter: JsonNode) =>
+    case AddInteraction(inter: JsonNode) =>
+      val text = inter.get("twitter").get("text").asText().toLowerCase
+      val character = characters.find(s => text.contains(s)).head
       val filteredInteraction = filterInteraction(inter)
       val oldInteractions =
         if (interactions.contains(character)) {
@@ -32,6 +35,10 @@ class DatasiftStreamActor extends Actor with ActorLogging {
       bw.write(JSONObject(interactions).toString())
       bw.close()
       // perform some reporting
+      val counts = interactions.map(kv => (kv._1, kv._2.length))
+      val sortedByCounts = ListMap(counts.toList.sortBy(-_._2):_*)
+      println("characters by mention counts")
+      sortedByCounts.foreach(println)
 
     case m =>
       log.info("got unknown message "+ m)
@@ -47,5 +54,5 @@ class DatasiftStreamActor extends Actor with ActorLogging {
 }
 
 sealed trait Message
-case class AddInteraction(character: String, inter: JsonNode) extends Message
+case class AddInteraction(inter: JsonNode) extends Message
 case object Dump

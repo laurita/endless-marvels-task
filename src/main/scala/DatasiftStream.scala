@@ -28,7 +28,7 @@ class DatasiftStream(datasiftUsername: String, datasiftApiKey: String, character
     // create akka actor system for interaction logging
     val system = ActorSystem("system")
     println("created Akka system")
-    val streamActor = system.actorOf(Props(new DatasiftStreamActor()), name="streamActor")
+    val streamActor = system.actorOf(Props(new DatasiftStreamActor(characters)), name="streamActor")
     println("created streamActor")
 
     // schedule dumping after 0ms repeating every 50ms
@@ -77,7 +77,7 @@ class DatasiftStream(datasiftUsername: String, datasiftApiKey: String, character
   }
 
   def buildCsdlQuery(chars: List[String]): String = {
-    //"twitter.text contains_any " + chars.mkString(",")
+    // english tweets containing some of the characters
     "interaction.type == \"twitter\" AND language.tag == \"en\" AND twitter.text contains_any \""+ chars.mkString(",") +"\""
   }
 }
@@ -93,17 +93,15 @@ class Subscription(stream: Stream, actor: ActorRef, chars: List[String]) extends
   }
 
   def onMessage(i: Interaction) {
-    println(" <> INTERACTION:\n" + i)
-    val text = i.get("twitter").get("text").asText().toLowerCase
-    val charMentioned = chars.find(s => text.contains(s)).head
-    actor ! AddInteraction(charMentioned, i.getData)
+    //println(" <> INTERACTION:\n" + i)
+    actor ! AddInteraction(i.getData)
   }
 }
 
 class DeleteHandler extends StreamEventListener {
   def onDelete(di: DeletedInteraction) {
     //go off and delete the interaction if you have it stored. This is a strict requirement!
-    println("DELETED:\n " + di)
+    //println("DELETED:\n " + di)
   }
 }
 

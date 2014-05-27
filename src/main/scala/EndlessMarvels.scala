@@ -50,15 +50,13 @@ object EndlessMarvels {
   }
 
   def getMarvelsCharacters(privateKey: String, publicKey: String) = {
-    println("in characterList")
     val time = System.currentTimeMillis().toString
-    println(s"time: $time")
 
     val hash = calculateMD5(time, privateKey, publicKey)
-    println(s"md5:$hash")
 
     val request = url("http://gateway.marvel.com/v1/public/characters")
       .addQueryParameter("ts", time)
+      .addQueryParameter("limit", "100")
       .addQueryParameter("apikey", publicKey)
       .addQueryParameter("hash", hash).GET
 
